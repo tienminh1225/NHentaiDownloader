@@ -9,7 +9,8 @@ let options = [
     new CheckBox("displayCheckbox"),
     new CheckBox("darkMode"),
     new CheckBox("replaceSpaces"),
-    new CheckBox("htmlParsing")
+    new CheckBox("htmlParsing"),
+    new CheckBox("bypassUrlCheck")
 ]
 
 chrome.storage.sync.get({
@@ -19,7 +20,8 @@ chrome.storage.sync.get({
     duplicateBehaviour: "rename",
     darkMode: false,
     replaceSpaces: true,
-    htmlParsing: false
+    htmlParsing: false,
+    bypassUrlCheck: false
 }, function(elems) {
     options.forEach(o => {
         o.init(elems);

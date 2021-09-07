@@ -44,7 +44,29 @@ export default class Popup
                 file: "js/getHtml.js" // Get the HTML of the page
             });
         } else {
-            document.getElementById('action')!.innerHTML =  message.invalidPage();
+            let bypassUrlCheck: boolean = false;
+            await new Promise((resolve, _reject) => {
+                resolve(
+                    chrome.storage.sync.get({
+                        bypassUrlCheck: false
+                    }, function(elems) {
+                        bypassUrlCheck = elems.bypassUrlCheck;
+                    })
+                );
+            });
+            if (bypassUrlCheck) { // If using web proxy
+                match = /\/g\/([0-9]+)/.exec(self.url)
+                if (match !== null) {
+                    await self.#doujinshiPreviewAsync(match[1]);
+                } else {
+                    // @ts-ignore
+                    chrome.tabs.executeScript(null, {
+                        file: "js/getHtml.js" // Get the HTML of the page
+                    });
+                }
+            } else {
+                document.getElementById('action')!.innerHTML =  message.invalidPage();
+            }
         }
     }
 
