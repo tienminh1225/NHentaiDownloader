@@ -63,32 +63,55 @@ export default class Downloader
             let maxNbOfPage = this.#json.images.pages.length;
             for (let i = 0; i < maxNbOfPage; i++)
             {
-                await this.#downloadPageInternalAsync(i, i * (this.downloadName !== null ? 50 : 100) / maxNbOfPage);
+                let nbTries = 5;
+                while (true)
+                {
+                    try
+                    {
+                        await this.#downloadPageInternalAsync(i, i * 100 / maxNbOfPage);
+                        break;
+                    }
+                    catch (error: any)
+                    {
+                        if (nbTries > 0)
+                        {
+                            console.warn("Error while downloading " + this.#doujinshiName + "/" + (i + 1) + ": " + error + ", tries remaining: " + nbTries);
+                            nbTries--;
+                        }
+                        else
+                        {
+                            throw error;
+                        }
+                    }
+                }
                 if (this.isAwaitingAbort) {
                     throw "Download was aborted";
                 }
             }
 
-            // Zipping
-            if (this.useZip !== "raw" && this.downloadName !== null) { // Raw download doesn't need zipping
-                this.updateProgress(50, "in progress...", true);
+            // For multiple download, we want to skip the "zipping" part
+            if (this.downloadName !== null) {
+                // Zipping
+                if (this.useZip !== "raw") { // Raw download doesn't need zipping
+                    this.updateProgress(0, "in progress...", true);
 
-                let self = this;
-                this.#zip.generateAsync({type: "blob"}, function(elem: any) {
-                    try {
-                        self.updateProgress(50 + (elem.percent / 2), elem.currentFile == null ? self.path : elem.currentFile, true);
-                    } catch (e) { } // Dead object
-                })
-                .then(function(content: any) { // Zipping done
-                    self.currentProgress = 100;
-                    fileSaver.saveAs(content, self.downloadName + "." + self.useZip);
-                    try {
-                        self.updateProgress(100, null, true); // Notify popup that we are done
-                    } catch (e) { } // Dead object
-                });
-            } else {
-                this.currentProgress = 100;
-                this.updateProgress(100, null, true); // Notify popup that we are done
+                    let self = this;
+                    this.#zip.generateAsync({type: "blob"}, function(elem: any) {
+                        try {
+                            self.updateProgress(elem.percent, elem.currentFile == null ? self.path : elem.currentFile, true);
+                        } catch (e) { } // Dead object
+                    })
+                    .then(function(content: any) { // Zipping done
+                        self.currentProgress = 100;
+                        fileSaver.saveAs(content, self.downloadName + "." + self.useZip);
+                        try {
+                            self.updateProgress(100, null, true); // Notify popup that we are done
+                        } catch (e) { } // Dead object
+                    });
+                } else {
+                    this.currentProgress = 100;
+                    this.updateProgress(100, null, true); // Notify popup that we are done
+                }
             }
         }
         catch (error)
